@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: halloween-guidizzolo
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TOWN_NAME
+        value: Guidizzolo
+      - key: TOWN_PROVINCE
+        value: MN
+      - key: ADMIN_KEY
+        generateValue: true
+      - key: SALT
+        generateValue: true

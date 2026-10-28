@@ -1,0 +1,8 @@
+node_modules/
+tiles_cache/
+halloween.db
+halloween.db-journal
+halloween.db-wal
+halloween.db-shm
+.env
+.DS_Store

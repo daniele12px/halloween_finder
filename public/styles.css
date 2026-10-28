@@ -1,0 +1,805 @@
+/* ==========================================================================
+   Halloween Guidizzolo - Interfaccia Pulita, Grande e Semplice
+   ========================================================================== */
+
+:root {
+  --bg-dark: #0f0c1b;
+  --bg-surface: #1a152e;
+  --bg-card: #231c3d;
+  
+  --primary: #ff7800;
+  --primary-hover: #ff9100;
+  --primary-glow: rgba(255, 120, 0, 0.4);
+  
+  --green: #2ecc71;
+  --red: #e74c3c;
+
+  --text-main: #ffffff;
+  --text-muted: #c4bfd6;
+  --text-dim: #928ca6;
+  
+  --border-color: #3b3058;
+  
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-full: 9999px;
+  
+  --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  /* TESTI GRANDI E LEGGIBILI AL BUIO */
+  font-size: 18px;
+  line-height: 1.4;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ==========================================================================
+   Header Essenziale
+   ========================================================================== */
+
+.app-header {
+  flex-shrink: 0;
+  background: #18132b;
+  border-bottom: 2px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  z-index: 1000;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-pumpkin {
+  font-size: 38px;
+  line-height: 1;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--primary);
+  line-height: 1.1;
+}
+
+.brand-sub {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-privacy-info {
+  background: var(--bg-card);
+  border: 2px solid var(--border-color);
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 700;
+  padding: 10px 14px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-privacy-info:hover {
+  border-color: var(--primary);
+  color: #ffffff;
+}
+
+.btn-main-add {
+  background: linear-gradient(135deg, #ff7800 0%, #e65c00 100%);
+  border: none;
+  color: #ffffff;
+  font-family: var(--font-sans);
+  font-size: 17px;
+  font-weight: 800;
+  padding: 12px 20px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  box-shadow: 0 4px 16px var(--primary-glow);
+  transition: transform 0.15s ease, background 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-main-add:active {
+  transform: scale(0.96);
+}
+
+/* ==========================================================================
+   Mappa
+   ========================================================================== */
+
+.map-wrapper {
+  position: relative;
+  width: 100%;
+  flex: 1;
+  min-height: 200px;
+  background: #110e1e;
+  overflow: hidden;
+}
+
+#map {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  background: #110e1e;
+  z-index: 1;
+}
+
+/* Filtro Notturno Spettrale su Tessere Locali */
+.spooky-tiles .leaflet-tile-pane {
+  filter: invert(100%) hue-rotate(180deg) brightness(85%) contrast(90%);
+}
+
+/* Controlli Galleggianti su Mappa */
+.map-controls {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 800;
+  display: flex;
+  gap: 12px;
+}
+
+.btn-locate {
+  background: #1d1736;
+  border: 2px solid var(--primary);
+  color: #ffffff;
+  padding: 14px 24px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-sans);
+  font-size: 18px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.7);
+  transition: transform 0.15s ease;
+}
+
+.btn-locate:active {
+  transform: scale(0.96);
+}
+
+.locate-icon {
+  font-size: 22px;
+}
+
+/* Banner Selezione Punto */
+.pick-banner {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 850;
+  background: #ff7800;
+  color: #ffffff;
+  padding: 14px 20px;
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 17px;
+  font-weight: 700;
+  width: 90%;
+  max-width: 480px;
+  justify-content: space-between;
+}
+
+.pick-banner.hidden {
+  display: none;
+}
+
+.btn-pick-cancel {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+/* ==========================================================================
+   Marker & Popup Leaflet Semplificati
+   ========================================================================== */
+
+.leaflet-popup-content-wrapper {
+  background: #1d1736 !important;
+  color: #ffffff !important;
+  border-radius: var(--radius-lg) !important;
+  border: 2px solid var(--border-color) !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.8) !important;
+  padding: 8px !important;
+}
+
+.leaflet-popup-tip {
+  background: #1d1736 !important;
+}
+
+.custom-pumpkin-marker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.marker-pin {
+  width: 48px;
+  height: 48px;
+  border-radius: 50% 50% 50% 0;
+  position: absolute;
+  transform: rotate(-45deg);
+  left: 50%;
+  top: 50%;
+  margin: -24px 0 0 -24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
+}
+
+.marker-pin.active {
+  background: linear-gradient(135deg, #ff9100 0%, #ff5500 100%);
+  border: 2px solid #ffffff;
+}
+
+.marker-pin.out_of_candy {
+  background: #443c5b;
+  border: 2px solid #8e84a8;
+  filter: grayscale(0.8);
+}
+
+.marker-emoji {
+  transform: rotate(45deg);
+  font-size: 26px;
+  line-height: 1;
+}
+
+.user-gps-marker {
+  width: 24px;
+  height: 24px;
+  background: #0984e3;
+  border: 4px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 20px #0984e3;
+}
+
+/* Contenuto Popup */
+.house-popup {
+  padding: 10px;
+  min-width: 260px;
+  max-width: 320px;
+}
+
+.popup-status {
+  display: inline-block;
+  font-size: 15px;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  margin-bottom: 8px;
+}
+
+.popup-status.active {
+  background: rgba(46, 204, 113, 0.2);
+  color: var(--green);
+  border: 1px solid var(--green);
+}
+
+.popup-status.out_of_candy {
+  background: rgba(231, 76, 60, 0.2);
+  color: #ff7675;
+  border: 1px solid var(--red);
+}
+
+.popup-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--primary);
+  margin-bottom: 6px;
+  line-height: 1.2;
+}
+
+.popup-address {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.popup-notes {
+  font-size: 16px;
+  background: #141026;
+  border-left: 4px solid var(--primary);
+  padding: 8px 12px;
+  margin-bottom: 14px;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  color: #f1edff;
+}
+
+.btn-popup-nav {
+  display: block;
+  background: #ff7800;
+  color: #ffffff;
+  font-size: 17px;
+  font-weight: 800;
+  text-align: center;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  margin-bottom: 8px;
+}
+
+.btn-popup-manage {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 14px;
+  text-align: center;
+  padding: 6px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* ==========================================================================
+   Modali Grandi e Chiari
+   ========================================================================== */
+
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  background: rgba(5, 3, 10, 0.85);
+  backdrop-filter: blur(5px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.modal-backdrop.hidden {
+  display: none;
+}
+
+.modal-card {
+  background: var(--bg-surface);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.9);
+}
+
+.modal-header {
+  padding: 18px 22px;
+  border-bottom: 2px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #141024;
+}
+
+.modal-header h2 {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.btn-close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 36px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.modal-body {
+  padding: 22px;
+}
+
+/* Campi Form Grandi */
+.field-group {
+  margin-bottom: 20px;
+}
+
+.field-group label {
+  display: block;
+  font-size: 17px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 8px;
+}
+
+.field-group input[type="text"],
+.field-group input[type="password"] {
+  width: 100%;
+  background: var(--bg-card);
+  border: 2px solid var(--border-color);
+  color: #ffffff;
+  /* Testo di input grande per digitazione facile */
+  padding: 14px 16px;
+  font-size: 18px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+}
+
+.field-group input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.field-group small {
+  display: block;
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
+.address-row {
+  display: flex;
+  gap: 10px;
+}
+
+.address-row input {
+  flex: 1;
+}
+
+.btn-pick-map {
+  background: var(--bg-card);
+  border: 2px solid var(--primary);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.confirmed-badge {
+  margin-top: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--green);
+  background: rgba(46, 204, 113, 0.15);
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+}
+
+.confirmed-badge.hidden {
+  display: none;
+}
+
+.simple-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--bg-card);
+  padding: 14px;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--border-color);
+}
+
+.simple-checkbox input {
+  width: 24px;
+  height: 24px;
+  accent-color: var(--primary);
+}
+
+/* Pulsanti Azione */
+.btn-submit {
+  width: 100%;
+  background: linear-gradient(135deg, #ff7800 0%, #e65c00 100%);
+  border: none;
+  color: #fff;
+  font-family: var(--font-sans);
+  font-size: 20px;
+  font-weight: 800;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  box-shadow: 0 4px 16px var(--primary-glow);
+  margin-top: 10px;
+}
+
+.btn-delete {
+  width: 100%;
+  background: rgba(231, 76, 60, 0.15);
+  border: 2px solid var(--red);
+  color: #ff7675;
+  font-family: var(--font-sans);
+  font-size: 17px;
+  font-weight: 800;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  margin-top: 14px;
+}
+
+/* Schermata di Gestione Casa */
+.manage-title {
+  font-size: 24px;
+  color: var(--primary);
+  margin-bottom: 4px;
+}
+
+.manage-sub {
+  font-size: 17px;
+  color: var(--text-muted);
+  margin-bottom: 18px;
+}
+
+.big-status-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.status-option {
+  cursor: pointer;
+}
+
+.status-option input {
+  display: none;
+}
+
+.status-box {
+  background: var(--bg-card);
+  border: 3px solid var(--border-color);
+  padding: 16px;
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  transition: all 0.15s ease;
+}
+
+.status-box .status-icon {
+  font-size: 28px;
+  margin-bottom: 4px;
+}
+
+.status-box strong {
+  font-size: 19px;
+  color: #ffffff;
+}
+
+.status-box span {
+  font-size: 15px;
+  color: var(--text-muted);
+}
+
+.status-option input:checked + .status-box {
+  border-color: var(--green);
+  background: rgba(46, 204, 113, 0.15);
+}
+
+.status-option input:checked + .status-box.empty {
+  border-color: var(--red);
+  background: rgba(231, 76, 60, 0.15);
+}
+
+/* Success Card */
+.success-box {
+  text-align: center;
+  padding: 10px 0;
+}
+
+.success-emoji {
+  font-size: 54px;
+  margin-bottom: 10px;
+}
+
+.success-box h3 {
+  font-size: 24px;
+  color: var(--primary);
+  margin-bottom: 8px;
+}
+
+.success-box p {
+  font-size: 17px;
+  color: var(--text-muted);
+}
+
+.save-link-card {
+  background: var(--bg-card);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin: 18px 0;
+  text-align: left;
+}
+
+.save-link-card p {
+  font-size: 16px;
+  color: #ffffff;
+  margin-bottom: 10px;
+}
+
+.save-link-card input {
+  width: 100%;
+  background: #141026;
+  border: 1px solid var(--border-color);
+  color: #fff;
+  padding: 10px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.btn-whatsapp, .btn-email {
+  background: #25d366;
+  color: #0b2210;
+  font-size: 17px;
+  font-weight: 800;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-decoration: none;
+}
+
+.btn-email {
+  background: #3498db;
+  color: #ffffff;
+}
+
+.mt-15 {
+  margin-top: 15px;
+}
+
+/* Toasts Grandi */
+.toast-container {
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.toast {
+  background: #1d1736;
+  border: 2px solid var(--primary);
+  color: #ffffff;
+  padding: 14px 22px;
+  border-radius: var(--radius-full);
+  font-size: 16px;
+  font-weight: 700;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8);
+}
+
+.toast-success {
+  border-color: var(--green);
+}
+
+.toast-error {
+  border-color: var(--red);
+}
+
+.gdpr-consent-note {
+  background: rgba(157, 78, 221, 0.15);
+  border: 1px solid #6c439e;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  color: #e2d9f3;
+  margin-bottom: 16px;
+}
+
+.share-buttons-row {
+  display: flex;
+  gap: 10px;
+}
+
+.share-buttons-row a {
+  flex: 1;
+}
+
+.info-section {
+  background: var(--bg-card);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.info-section h3 {
+  font-size: 19px;
+  color: var(--primary);
+  margin-bottom: 10px;
+}
+
+.info-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.info-list li {
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--text-main);
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .brand-title {
+    font-size: 18px;
+  }
+  .brand-sub {
+    display: none;
+  }
+  .btn-privacy-info {
+    font-size: 14px;
+    padding: 8px 12px;
+  }
+  .btn-main-add {
+    font-size: 15px;
+    padding: 10px 14px;
+  }
+  .share-buttons-row {
+    flex-direction: column;
+  }
+}

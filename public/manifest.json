@@ -1,0 +1,18 @@
+{
+  "name": "Halloween Guidizzolo - Dolcetto o Scherzetto",
+  "short_name": "ZuccAmica",
+  "description": "Mappa delle case con dolcetti per Halloween a Guidizzolo",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d0c15",
+  "theme_color": "#ff7800",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+name = "halloween-guidizzolo"
+pages_build_output_dir = "public"
+compatibility_date = "2026-10-01"
+
+# Per salvare le case su Cloudflare Pages gratuitamente (zero database da gestire),
+# Cloudflare usa un KV Namespace gratuito chiamato "HOUSES_KV" (oppure funziona in modalità statica + email)
