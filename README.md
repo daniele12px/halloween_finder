@@ -1,123 +1,92 @@
-# 🎃 Halloween Finder — Mappa Comunitaria "Dolcetto o Scherzetto"
+# 🎃 Halloween Finder
 
-**Halloween Finder** è un'applicazione web interattiva, leggera e progettata nel pieno rispetto della privacy (GDPR by design) che permette alle famiglie e ai cittadini di un comune di segnalare sulla mappa le abitazioni che distribuiscono caramelle durante la serata di Halloween.
+Una mappa gratuita che aiuta i bambini a trovare le case dove fare **dolcetto o scherzetto** la sera di Halloween.
 
----
+Le famiglie che vogliono partecipare aggiungono la propria casa con un tocco, i bambini (con un adulto) aprono la mappa dal telefono e vedono dove suonare. Nato a Guidizzolo (MN) e pensato per essere copiato da qualsiasi comune, quartiere o condominio.
 
-## 🌟 Cosa fa l'applicazione
+> Un progetto di [Dodicipixel](https://www.dodicipixel.com) per la comunità.
 
-### 👧 Per le famiglie e i bambini
-- **Mappa interattiva ad alto contrasto**: mostra con icone chiare le case con dolcetti disponibili (`🎃 Dolcetti Pronti`) e quelle che li hanno terminati (`👻 Dolcetti Finiti`), pensata per essere leggibile anche al buio da smartphone.
-- **Indicazioni per celiaci**: evidenzia le case che offrono anche dolcetti senza glutine (`🌾`).
-- **Posizione GPS 100% locale ("Dove sono?")**: il pulsante per localizzarsi sulla mappa calcola la posizione esclusivamente all'interno del browser del telefono. Le coordinate GPS dei bambini **non vengono mai inviate né salvate sul server**.
-- **Mappe con cache locale**: le tessere geografiche di OpenStreetMap vengono memorizzate localmente nella cartella `tiles_cache/` (ricreata in automatico se assente), riducendo le chiamate esterne e velocizzando il caricamento.
+## Come funziona
 
-### 🏡 Per chi apre la propria casa ai dolcetti
-- **Registrazione rapida senza account**: non servono email, numeri di telefono, cognomi reali né password da ricordare. Basta scegliere un soprannome di fantasia (es. *"Il Castello dei Fantasmi"*) e indicare la via o toccare il punto sulla mappa.
-- **Gestione immediata dello stato**: il dispositivo che registra la casa salva automaticamente un token casuale nel browser (`localStorage`), permettendo con un solo tocco di impostare *"Dolcetti Finiti 👻"* o rimuovere la casa dalla mappa a fine serata.
-- **Link di gestione condivisibile**: subito dopo la registrazione viene generato un link segreto di gestione salvabile su WhatsApp o via email per controllare la propria casa anche da un altro dispositivo.
-- **Zero manutenzione e pulizia automatica (GDPR)**: le registrazioni scadono e vengono cancellate automaticamente dopo 14 giorni, così nessun indirizzo resta archiviato dopo Halloween.
+- **Niente account, niente password.** Chi aggiunge una casa sceglie un soprannome divertente (non serve il cognome), indica la via o tocca il punto sulla mappa. Il telefono ricorda da solo che quella casa è sua e permette di rimuoverla con un tocco.
+- **Privacy prima di tutto.** Non vengono chiesti nomi, email o numeri di telefono. La posizione dei bambini ("Dove sono?") resta sul telefono e non viene mai inviata o salvata. La mappa passa dal sito stesso, quindi nessun indirizzo IP arriva a servizi pubblicitari.
+- **Si pulisce da solo.** L'elenco delle case viene cancellato automaticamente circa due settimane dopo l'ultima modifica, e ognuno può togliere la propria casa quando vuole.
+- **Gratis.** Gira sul piano gratuito di Cloudflare, di solito più che sufficiente per un comune.
 
----
+## Lo voglio nel mio comune: fatti aiutare da un assistente AI
 
-## 🚀 Installazione e avvio in locale
+Non serve saper programmare. Ti servono un account [GitHub](https://github.com) e un account [Cloudflare](https://www.cloudflare.com) (entrambi gratuiti) e un assistente AI di ultima generazione (Claude, ChatGPT, Gemini o simili). Se l'assistente può lavorare su file e browser (per esempio Claude in modalità agente o Codex) farà lui quasi tutto; se è una semplice chat ti guiderà passo passo.
 
-### Prerequisiti
-- **Node.js** (versione 18 o superiore) e **npm**.
+Copia questo testo, scrivi al posto dei puntini il tuo comune e incollalo nell'assistente:
 
-### Passaggi
-```bash
-# 1. Installa le dipendenze del progetto
-npm install
+```text
+Voglio pubblicare per il mio comune il progetto open source "Halloween Finder":
+https://github.com/daniele12px/halloween_finder
 
-# 2. Crea il file di configurazione locale copiando il modello di esempio
-cp .env.example .env
+Il mio comune è: ........ (provincia: ........)
 
-# 3. Apri il file .env e imposta due valori segreti a tua scelta per ADMIN_KEY e SALT
+Non sono uno sviluppatore. Guidami con parole semplici, un passaggio alla volta, e
+aspetta la mia conferma prima di passare al successivo. Se hai strumenti per lavorare
+su file, GitHub e browser, fai tu tutto quello che puoi e chiedimi solo le cose che
+posso fare solo io (accedere ai miei account, premere conferme).
 
-# 4. Avvia il server
-npm start
+Prima di iniziare leggi il README e il codice del repository, e controlla la
+documentazione ufficiale aggiornata di Cloudflare Pages, perché i menu cambiano.
+
+Cosa devi fare:
+
+1. Crea una copia ("fork") del progetto sul mio account GitHub.
+
+2. Adattalo al mio comune. Cerca nel codice "Guidizzolo" e cambia nome, titolo e
+   testi. Trova su OpenStreetMap le coordinate del centro del mio comune e chiedimi
+   conferma prima di usarle. Aggiorna centro, raggio massimo e elenco delle vie
+   principali. I punti da toccare sono: public/index.html, public/app.js,
+   public/manifest.json, functions/_lib/store.js, functions/api/houses.js e
+   functions/api/reverse-geocode.js. Nel file functions/tiles/[[path]].js cambia
+   anche l'indirizzo GitHub nello USER_AGENT con quello del mio fork.
+
+3. Pubblicalo su Cloudflare Pages collegandolo al mio fork: nessun comando di build,
+   cartella di output "public". Poi crea uno spazio dati KV e collegalo al progetto
+   con il nome ESATTO "HOUSES_KV" (sia per produzione sia per anteprima), quindi
+   rifai il deploy. Non aggiungere "pages_build_output_dir" al file wrangler.toml:
+   altrimenti non potrei collegare lo spazio dati dal pannello.
+
+4. Collauda il sito pubblicato: apri la mappa, aggiungi una casa di prova, controlla
+   che compaia, poi rimuovila.
+
+5. Dammi l'indirizzo del sito e un breve testo da condividere con le famiglie.
+
+Regole: non chiedermi mai di scriverti password o token in chat; non inserire dati
+personali di nessuno; usa solo servizi gratuiti (se Cloudflare mi chiede una carta di
+pagamento, fermati e avvisami); non cambiare altro oltre a quanto indicato.
 ```
 
-L'applicazione sarà disponibile all'indirizzo **`http://localhost:3000`** e partirà con un **database vuoto**.
+## Per chi sviluppa
 
-Per eseguire la suite di test automatici (che utilizza un database isolato in memoria senza toccare il database locale):
-```bash
-npm test
-```
+Il progetto è un sito statico (cartella `public/`) più alcune funzioni Cloudflare Pages (cartella `functions/`). Non ci sono dipendenze da installare.
 
----
+| Percorso | Cosa fa |
+| --- | --- |
+| `public/` | L'app: pagina, mappa (Leaflet, incluso in `vendor/`), stile, service worker |
+| `functions/api/houses.js` | Elenco pubblico delle case e registrazione di una nuova casa |
+| `functions/api/houses/[id].js` | Rimozione di una casa (serve il codice segreto del proprietario) |
+| `functions/api/houses/[id]/manage.js` | Controllo del link personale di gestione |
+| `functions/api/reverse-geocode.js` | Da coordinate a nome della via più vicina |
+| `functions/tiles/[[path]].js` | Mappa OpenStreetMap servita dal nostro sito, con cache e limite alla zona del comune |
+| `functions/_lib/store.js` | Archivio KV e impostazioni (centro, raggio, limiti) |
 
-## 🧪 Dati finti di esempio (Demo)
-
-Il progetto parte sempre con un database vuoto e non contiene dati reali.
-Se desideri provare l'interfaccia con **5 case dimostrative completamente inventate** (definite nel file `demo/demo_houses.json`), puoi caricarle eseguendo:
-
-```bash
-npm run seed:demo
-```
-
-Per svuotare il database ed eliminare tutte le case di prova (o per ripulire il database al termine della festa di Halloween):
+Le case sono salvate in Cloudflare KV, nello spazio con binding `HOUSES_KV`. Per provare tutto sul proprio computer:
 
 ```bash
-npm run purge
+npx wrangler pages dev public --kv HOUSES_KV
 ```
 
----
+### Limiti noti
 
-## 🗺️ Come configurare l'app per un altro Comune
+- L'intero elenco è in un'unica chiave KV: se due persone registrano una casa nello stesso istante, una delle due può andare persa e dovrà riprovare. Va bene per un comune o per un evento di una sera, non per carichi grandi.
+- Non c'è un limite di richieste per utente; c'è solo un tetto massimo di 500 case e un raggio massimo dal centro del comune.
+- Cancellare "dopo due settimane" significa 14 giorni dopo l'ultima modifica all'elenco (è la scadenza della chiave KV).
 
-L'applicazione è pensata per essere riutilizzata facilmente da qualsiasi comune, comitato genitori o associazione. Tutte le impostazioni geografiche e di sicurezza si controllano tramite il file `.env` (o le variabili d'ambiente del servizio di hosting):
+## Crediti e licenza
 
-| Variabile | Descrizione | Valore predefinito |
-| :--- | :--- | :--- |
-| `PORT` | Porta HTTP su cui si avvia il server Node.js | `3000` |
-| `TOWN_NAME` | Nome del comune mostrato e usato per il geofencing | `Guidizzolo` |
-| `TOWN_PROVINCE` | Sigla della provincia | `MN` |
-| `TOWN_REGION` | Nome della regione | `Lombardia` |
-| `CENTER_LAT` | Latitudine del centro della mappa all'apertura | `45.3188` |
-| `CENTER_LNG` | Longitudine del centro della mappa all'apertura | `10.5828` |
-| `MAX_RADIUS_KM` | Raggio massimo (in km dal centro) entro cui sono accettate le case | `8.0` |
-| `ADMIN_KEY` | Password di amministrazione (obbligatoria in produzione) | *(da impostare)* |
-| `SALT` | Valore segreto per l'hashing crittografico (obbligatorio in produzione) | *(da impostare)* |
-
-> **Nota di sicurezza per la produzione:** se `NODE_ENV=production` e `ADMIN_KEY` o `SALT` mancano (oppure contengono ancora i valori segnaposto di `.env.example`), il server rifiuta di avviarsi per evitare l'uso di credenziali note.
-
-Se vuoi pre-scaricare in anticipo nella cartella `tiles_cache/` le tessere della mappa della zona configurata:
-```bash
-npm run precache
-```
-
----
-
-## ☁️ Come pubblicare l'applicazione online
-
-### Opzione A: Render (Server Node.js + SQLite completo)
-1. Pubblica il repository sul tuo account GitHub.
-2. Accedi a [Render.com](https://render.com) e clicca su **New +** -> **Web Service** (oppure **Blueprint** per leggere automaticamente `render.yaml`).
-3. Collega il repository GitHub e verifica i parametri:
-   - **Runtime**: `Node`
-   - **Build Command**: `npm install`
-   - **Start Command**: `npm start`
-4. Nella scheda **Environment**, assicurati di impostare:
-   - `NODE_ENV` = `production`
-   - `ADMIN_KEY` = *(una password segreta scelta da te)*
-   - `SALT` = *(una stringa casuale segreta scelta da te)*
-   - Eventuali variabili del tuo comune (`TOWN_NAME`, `CENTER_LAT`, `CENTER_LNG`, `MAX_RADIUS_KM`).
-5. Avvia il deploy: Render fornirà un indirizzo HTTPS pubblico pronto da condividere.
-
-### Opzione B: Cloudflare Pages (Frontend statico + Pages Functions)
-Il progetto include la cartella `functions/` e il file `wrangler.toml` per l'esecuzione su **Cloudflare Pages**:
-1. Accedi alla dashboard di [Cloudflare](https://dash.cloudflare.com/) e vai in **Workers & Pages** -> **Create** -> **Pages** -> **Connect to Git**.
-2. Seleziona il repository GitHub e imposta:
-   - **Build command**: *(lascia vuoto)*
-   - **Build output directory**: `public`
-3. Per la persistenza condivisa su rete edge, crea un namespace **Workers KV** dalla dashboard Cloudflare e collegalo nelle impostazioni del progetto Pages (**Settings** -> **Functions** -> **KV namespace bindings**) con il nome variabile `HOUSES_KV`.
-
----
-
-## 📄 Licenza
-
-Questo progetto è distribuito con licenza [MIT](./LICENSE).
-
-Un progetto di Dodicipixel per la comunità
+Mappe © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright). Libreria di mappe [Leaflet](https://leafletjs.com) (licenza BSD-2). Codice sotto licenza [MIT](LICENSE): puoi usarlo, copiarlo e modificarlo liberamente.

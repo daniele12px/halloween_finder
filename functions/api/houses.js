@@ -1,116 +1,95 @@
 /**
- * Cloudflare Pages Function per /api/houses
- * Funziona gratis sulla rete edge di Cloudflare (con KV opzionale o memoria edge)
+ * /api/houses
+ *   GET  -> elenco pubblico delle case (senza il codice segreto del proprietario)
+ *   POST -> registra una nuova casa
  */
+import { CENTER, MAX_RADIUS_KM, MAX_HOUSES, distanceKm, hasStore, readHouses, writeHouses, json } from "../_lib/store.js";
 
-// Il database parte vuoto per impostazione predefinita (nessuna casa reale precaricata)
-const DEFAULT_HOUSES = [];
-
-const GUIDIZZOLO_STREETS = [
-  { match: /marconi|piazza.*marconi/i, lat: 45.3190, lng: 10.5830, name: "Piazza Guglielmo Marconi" },
-  { match: /roma/i, lat: 45.3165, lng: 10.5844, name: "Via Roma" },
-  { match: /solferino/i, lat: 45.3205, lng: 10.5815, name: "Via Solferino" },
-  { match: /garibaldi/i, lat: 45.3180, lng: 10.5805, name: "Via Giuseppe Garibaldi" },
-  { match: /matteotti/i, lat: 45.3185, lng: 10.5825, name: "Via Giacomo Matteotti" },
-  { match: /veneto|vittorio.*veneto/i, lat: 45.3175, lng: 10.5855, name: "Via Vittorio Veneto" },
-  { match: /goito/i, lat: 45.3160, lng: 10.5870, name: "Via Goito" },
-  { match: /cavriana/i, lat: 45.3220, lng: 10.5810, name: "Via Cavriana" },
-  { match: /medole/i, lat: 45.3200, lng: 10.5780, name: "Via Medole" },
-  { match: /rodella/i, lat: 45.3170, lng: 10.5790, name: "Via Rodella" },
-  { match: /birbesi/i, lat: 45.3085, lng: 10.5695, name: "Frazione Birbesi" },
-  { match: /rebecco/i, lat: 45.3120, lng: 10.6050, name: "Frazione Rebecco" },
-  { match: /selaschi/i, lat: 45.3280, lng: 10.5750, name: "Località Selaschi" }
+// Aiuto per trovare un punto di partenza quando chi registra scrive solo la via
+const STREETS = [
+  { match: /marconi|piazza.*marconi/i, lat: 45.3190, lng: 10.5830 },
+  { match: /roma/i, lat: 45.3165, lng: 10.5844 },
+  { match: /solferino/i, lat: 45.3205, lng: 10.5815 },
+  { match: /garibaldi/i, lat: 45.3180, lng: 10.5805 },
+  { match: /matteotti/i, lat: 45.3185, lng: 10.5825 },
+  { match: /veneto|vittorio.*veneto/i, lat: 45.3175, lng: 10.5855 },
+  { match: /goito/i, lat: 45.3160, lng: 10.5870 },
+  { match: /cavriana/i, lat: 45.3220, lng: 10.5810 },
+  { match: /medole/i, lat: 45.3200, lng: 10.5780 },
+  { match: /rodella/i, lat: 45.3170, lng: 10.5790 },
+  { match: /birbesi/i, lat: 45.3085, lng: 10.5695 },
+  { match: /rebecco/i, lat: 45.3120, lng: 10.6050 },
+  { match: /selaschi/i, lat: 45.3280, lng: 10.5750 }
 ];
 
-// Memoria temporanea edge caso in cui KV non sia ancora collegato
-let memoryHouses = [...DEFAULT_HOUSES];
+export async function onRequestGet({ env }) {
+  const houses = await readHouses(env);
+  const publicHouses = houses.map(({ editToken, tags, status, ...rest }) => rest);
+  return json({ success: true, houses: publicHouses });
+}
 
-async function getStoredHouses(env) {
-  if (env && env.HOUSES_KV) {
-    const raw = await env.HOUSES_KV.get("houses_list", "json");
-    if (Array.isArray(raw) && raw.length > 0) return raw;
+export async function onRequestPost({ request, env }) {
+  if (!hasStore(env)) {
+    return json({ error: "L'archivio delle case non è ancora collegato (manca HOUSES_KV). Segui le istruzioni nel README." }, 503);
   }
-  return memoryHouses;
-}
 
-async function saveStoredHouses(env, list) {
-  memoryHouses = list;
-  if (env && env.HOUSES_KV) {
-    await env.HOUSES_KV.put("houses_list", JSON.stringify(list), {
-      expirationTtl: 14 * 86400 // Auto-cancellazione GDPR dopo 14 giorni!
-    });
-  }
-}
-
-export async function onRequestGet(context) {
-  const houses = await getStoredHouses(context.env);
-  const publicHouses = houses.map(({ editToken, ...rest }) => rest);
-  return new Response(JSON.stringify({ success: true, houses: publicHouses }), {
-    headers: { "Content-Type": "application/json" }
-  });
-}
-
-export async function onRequestPost(context) {
+  let body;
   try {
-    const body = await context.request.json();
-    const name = String(body.name || "").replace(/[<>]/g, "").trim().slice(0, 50);
-    let address = String(body.address || "").replace(/[<>]/g, "").trim().slice(0, 100);
-    const notes = String(body.notes || "").replace(/[<>]/g, "").trim().slice(0, 150);
+    body = await request.json();
+  } catch {
+    return json({ error: "Richiesta non valida." }, 400);
+  }
 
-    if (name.length < 2) {
-      return new Response(JSON.stringify({ error: "Inserisci il nome della casa." }), { status: 400 });
-    }
+  const clean = (value, max) => String(value || "").replace(/[<>]/g, "").trim().slice(0, max);
+  const name = clean(body.name, 50);
+  let address = clean(body.address, 100);
+  const notes = clean(body.notes, 120);
 
-    let lat = parseFloat(body.lat);
-    let lng = parseFloat(body.lng);
+  if (name.length < 2) {
+    return json({ error: "Inserisci il nome della casa." }, 400);
+  }
 
-    if (isNaN(lat) || isNaN(lng)) {
-      lat = 45.3188;
-      lng = 10.5828;
-      for (const s of GUIDIZZOLO_STREETS) {
-        if (s.match.test(address)) {
-          lat = s.lat;
-          lng = s.lng;
-          break;
-        }
+  let lat = parseFloat(body.lat);
+  let lng = parseFloat(body.lng);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    lat = CENTER.lat;
+    lng = CENTER.lng;
+    for (const s of STREETS) {
+      if (s.match.test(address)) {
+        lat = s.lat;
+        lng = s.lng;
+        break;
       }
     }
-
-    if (!address) {
-      address = "Guidizzolo";
-    }
-
-    const id = crypto.randomUUID();
-    const editToken = crypto.randomUUID().replace(/-/g, "");
-    const newHouse = {
-      id,
-      name,
-      address,
-      lat: Number(lat.toFixed(5)),
-      lng: Number(lng.toFixed(5)),
-      status: "active",
-      tags: Array.isArray(body.tags) ? body.tags.filter(t => t === "gluten_free") : [],
-      notes,
-      editToken,
-      updated_at: Math.floor(Date.now() / 1000)
-    };
-
-    const houses = await getStoredHouses(context.env);
-    houses.unshift(newHouse);
-    await saveStoredHouses(context.env, houses);
-
-    return new Response(JSON.stringify({
-      success: true,
-      id,
-      address,
-      lat: newHouse.lat,
-      lng: newHouse.lng,
-      editToken
-    }), {
-      status: 201,
-      headers: { "Content-Type": "application/json" }
-    });
-  } catch (err) {
-    return new Response(JSON.stringify({ error: "Errore registrazione." }), { status: 500 });
   }
+
+  if (distanceKm(lat, lng, CENTER.lat, CENTER.lng) > MAX_RADIUS_KM) {
+    return json({ error: "Questa posizione è fuori dal comune." }, 400);
+  }
+
+  if (!address) address = "Guidizzolo";
+
+  const houses = await readHouses(env);
+  if (houses.length >= MAX_HOUSES) {
+    return json({ error: "Limite di case raggiunto." }, 429);
+  }
+
+  const id = crypto.randomUUID();
+  const editToken = crypto.randomUUID().replace(/-/g, "");
+  const newHouse = {
+    id,
+    name,
+    address,
+    lat: Number(lat.toFixed(5)),
+    lng: Number(lng.toFixed(5)),
+    notes,
+    editToken,
+    updated_at: Math.floor(Date.now() / 1000)
+  };
+
+  houses.unshift(newHouse);
+  await writeHouses(env, houses);
+
+  return json({ success: true, id, address, lat: newHouse.lat, lng: newHouse.lng, editToken }, 201);
 }

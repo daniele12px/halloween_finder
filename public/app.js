@@ -76,7 +76,7 @@ function initMap() {
 
   L.control.zoom({ position: 'bottomright' }).addTo(AppState.map);
 
-  // Tessere locali memorizzate su disco (Zero API Key, 100% cache locale)
+  // Mappa OpenStreetMap servita dal nostro stesso sito: nessun IP dei visitatori arriva a terzi
   L.tileLayer('/tiles/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>',
     minZoom: 12,
@@ -106,9 +106,8 @@ function initMap() {
 // ==========================================================================
 
 function createHouseIcon(house) {
-  const isOutOfCandy = house.status === 'out_of_candy';
-  const emoji = isOutOfCandy ? '👻' : '🎃';
-  const statusClass = isOutOfCandy ? 'out_of_candy' : 'active';
+  const emoji = '🎃';
+  const statusClass = 'active';
 
   const html = `
     <div class="custom-pumpkin-marker">
@@ -136,10 +135,8 @@ function renderHouses() {
       icon: createHouseIcon(house)
     });
 
-    const isAvailable = house.status === 'active';
-    const statusText = isAvailable ? '🍬 Dolcetti Disponibili!' : '👻 Dolcetti Finiti!';
-    const statusClass = isAvailable ? 'active' : 'out_of_candy';
-    const hasGlutenFree = Array.isArray(house.tags) && house.tags.includes('gluten_free');
+    const statusText = '🎃 Casa aperta ai bimbi!';
+    const statusClass = 'active';
     const isOwner = Boolean(AppState.ownedHouses[house.id]);
     const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${house.lat},${house.lng}&travelmode=walking`;
 
@@ -148,16 +145,15 @@ function renderHouses() {
         <span class="popup-status ${statusClass}">${statusText}</span>
         <h3 class="popup-title">${escapeHtml(house.name)}</h3>
         <p class="popup-address">📍 ${escapeHtml(house.address)}</p>
-        ${hasGlutenFree ? `<p style="font-size:15px;color:#2ecc71;font-weight:700;margin-bottom:8px;">🌾 Dolcetti senza glutine disponibili</p>` : ''}
         ${house.notes ? `<div class="popup-notes">💬 ${escapeHtml(house.notes)}</div>` : ''}
 
         <a href="${mapsUrl}" target="_blank" rel="noopener" class="btn-popup-nav">
           🚶 Portami qui (Navigatore)
         </a>
 
-        <button class="btn-popup-manage" onclick="openManageHouse('${house.id}', '${escapeAttr(house.name)}', '${escapeAttr(house.address)}', '${house.status}')">
-          ${isOwner ? '⚙️ Gestisci la tua casa (Finiti / Rimuovi)' : '⚙️ Sei il proprietario? Cambia stato'}
-        </button>
+        ${isOwner ? `<button class="btn-popup-manage" onclick="openManageHouse('${house.id}', '${escapeAttr(house.name)}', '${escapeAttr(house.address)}')">
+          ⚙️ Gestisci la tua casa (Rimuovi)
+        </button>` : ''}
       </div>
     `;
 
@@ -298,8 +294,6 @@ async function handleRegisterSubmit(e) {
   const address = document.getElementById('regAddress').value.trim();
   const name = document.getElementById('regName').value.trim();
   const notes = document.getElementById('regNotes').value.trim();
-  const tagCheckboxes = document.querySelectorAll('input[name="tags"]:checked');
-  const tags = Array.from(tagCheckboxes).map(cb => cb.value);
 
   try {
     const payload = {
@@ -307,7 +301,6 @@ async function handleRegisterSubmit(e) {
       address,
       lat: isNaN(latVal) ? null : latVal,
       lng: isNaN(lngVal) ? null : lngVal,
-      tags,
       notes
     };
 
@@ -341,7 +334,7 @@ async function handleRegisterSubmit(e) {
     const btnEmail = document.getElementById('btnSendEmail');
     if (btnEmail) {
       const emailSubject = `Halloween - Link gestione casa: ${name}`;
-      const emailBody = `Ecco il link personale per gestire lo stato dei dolcetti della casa "${name}" (${address}):\n\n${manageUrl}`;
+      const emailBody = `Ecco il link personale per gestire la casa "${name}" (${address}):\n\n${manageUrl}`;
       btnEmail.href = `mailto:?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
     }
 
@@ -366,14 +359,11 @@ async function handleRegisterSubmit(e) {
 // 6. Gestione Casa (Protetta da Token Dispositivo - Zero PIN)
 // ==========================================================================
 
-window.openManageHouse = function(id, name, address, currentStatus) {
+window.openManageHouse = function(id, name, address) {
   document.getElementById('manageHouseId').value = id;
   document.getElementById('manageEditToken').value = AppState.ownedHouses[id] || '';
   document.getElementById('manageHouseName').textContent = name;
   document.getElementById('manageHouseAddress').textContent = address;
-
-  const radio = document.querySelector(`input[name="houseStatus"][value="${currentStatus || 'active'}"]`);
-  if (radio) radio.checked = true;
 
   openModal('modalManage');
 };
@@ -390,39 +380,9 @@ async function openDirectManagement(id, token) {
     document.getElementById('manageHouseName').textContent = data.house.name;
     document.getElementById('manageHouseAddress').textContent = data.house.address;
 
-    const radio = document.querySelector(`input[name="houseStatus"][value="${data.house.status}"]`);
-    if (radio) radio.checked = true;
-
     openModal('modalManage');
   } catch (e) {
     console.error(e);
-  }
-}
-
-async function handleManageSubmit(e) {
-  e.preventDefault();
-  const id = document.getElementById('manageHouseId').value;
-  const editToken = document.getElementById('manageEditToken').value || AppState.ownedHouses[id] || '';
-  const status = document.querySelector('input[name="houseStatus"]:checked').value;
-
-  try {
-    const res = await fetch(`/api/houses/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ editToken, status })
-    });
-
-    const data = await res.json();
-    if (!res.ok) {
-      alert(data.error || 'Errore durante la modifica.');
-      return;
-    }
-
-    showToast('Stato aggiornato! 🎃', 'success');
-    closeAllModals();
-    await loadHouses();
-  } catch (err) {
-    alert('Errore di connessione.');
   }
 }
 
@@ -533,8 +493,6 @@ function initApp() {
   const formReg = document.getElementById('formRegisterHouse');
   if (formReg) formReg.addEventListener('submit', handleRegisterSubmit);
 
-  const formManage = document.getElementById('formManageStatus');
-  if (formManage) formManage.addEventListener('submit', handleManageSubmit);
 
   const btnDelete = document.getElementById('btnDeleteHouse');
   if (btnDelete) btnDelete.addEventListener('click', handleDeleteHouse);

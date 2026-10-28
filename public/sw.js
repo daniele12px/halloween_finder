@@ -1,5 +1,5 @@
 // Service Worker per PWA Halloween Guidizzolo
-const CACHE_NAME = 'halloween-guidizzolo-v5';
+const CACHE_NAME = 'halloween-guidizzolo-v6';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -35,7 +35,7 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(
       fetch(event.request).catch(() => {
-        return new Response(JSON.stringify({ error: "Sei offline! Riconnettiti alla rete per aggiornare i dolcetti." }), {
+        return new Response(JSON.stringify({ error: "Sei offline! Riconnettiti alla rete per aggiornare la mappa." }), {
           headers: { 'Content-Type': 'application/json' }
         });
       })

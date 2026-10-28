@@ -1,6 +1,7 @@
+# Configurazione minima, serve solo per provare il sito sul proprio computer
+# (comando: npx wrangler pages dev public --kv HOUSES_KV).
+#
+# NON aggiungere qui "pages_build_output_dir": se c'è, Cloudflare considera questo file
+# l'unica fonte di verità e dal pannello non potresti più collegare lo spazio dati HOUSES_KV.
 name = "halloween-guidizzolo"
-pages_build_output_dir = "public"
 compatibility_date = "2026-10-01"
-
-# Per salvare le case su Cloudflare Pages gratuitamente (zero database da gestire),
-# Cloudflare usa un KV Namespace gratuito chiamato "HOUSES_KV" (oppure funziona in modalità statica + email)

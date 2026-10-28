@@ -88,22 +88,14 @@
             <input type="hidden" id="regLng">
           </div>
 
-          <!-- 3. Opzione senza glutine semplice -->
-          <div class="field-group">
-            <label class="simple-checkbox">
-              <input type="checkbox" name="tags" value="gluten_free">
-              <span>🌾 Abbiamo anche dolcetti senza glutine (celiaci)</span>
-            </label>
-          </div>
-
-          <!-- 4. Nota facoltativa -->
+          <!-- 3. Nota facoltativa -->
           <div class="field-group">
             <label for="regNotes">Orario o note per i bambini (facoltativo)</label>
             <input type="text" id="regNotes" placeholder="es. Dalle 18:30 alle 21:00, suonare al cancello" maxlength="120">
           </div>
 
           <p class="gdpr-consent-note">
-            🔒 <strong>Privacy garantita:</strong> nessun dato personale richiesto, zero tracciamento e cancellazione automatica dopo Halloween.
+            🔒 <strong>Privacy garantita:</strong> nessun dato personale richiesto, zero tracciamento e cancellazione automatica circa due settimane dopo l'ultima modifica.
           </p>
 
           <button type="submit" id="btnSubmitRegister" class="btn-submit">
@@ -115,7 +107,7 @@
         <div id="registerSuccessView" class="success-box hidden">
           <div class="success-emoji">🎉 🎃</div>
           <h3>La tua casa è ora sulla mappa!</h3>
-          <p>Da questo telefono potrai cambiarne lo stato in <em>"Dolcetti Finiti 👻"</em> o rimuoverla con un solo tocco, senza codici o password.</p>
+          <p>Da questo telefono potrai rimuoverla con un solo tocco, senza codici o password.</p>
 
           <div class="save-link-card">
             <p>Vuoi poter gestire la casa anche da un altro telefono o inviare copia via <strong>Email / WhatsApp</strong>?</p>
@@ -136,11 +128,11 @@
     </div>
   </div>
 
-  <!-- MODAL SEMPLIFICATO: GESTISCI CASA (PROTETTO DA TOKEN DISPOSITIVO, ZERO PIN) -->
+  <!-- MODAL: GESTISCI CASA (PROTETTO DA TOKEN DEL DISPOSITIVO, ZERO PIN) -->
   <div id="modalManage" class="modal-backdrop hidden">
     <div class="modal-card">
       <div class="modal-header">
-        <h2>⚙️ Stato Dolcetti</h2>
+        <h2>⚙️ La tua casa</h2>
         <button class="btn-close" data-close="modalManage">&times;</button>
       </div>
 
@@ -148,34 +140,11 @@
         <h3 id="manageHouseName" class="manage-title">-</h3>
         <p id="manageHouseAddress" class="manage-sub">-</p>
 
-        <form id="formManageStatus">
+        <form id="formManageHouse">
           <input type="hidden" id="manageHouseId">
           <input type="hidden" id="manageEditToken">
 
-          <div class="field-group">
-            <label>Tocca lo stato attuale della casa:</label>
-            <div class="big-status-picker">
-              <label class="status-option">
-                <input type="radio" name="houseStatus" value="active" checked>
-                <div class="status-box">
-                  <span class="status-icon">🍬</span>
-                  <strong>Dolcetti Pronti!</strong>
-                  <span>Suonate pure il campanello</span>
-                </div>
-              </label>
-
-              <label class="status-option">
-                <input type="radio" name="houseStatus" value="out_of_candy">
-                <div class="status-box empty">
-                  <span class="status-icon">👻</span>
-                  <strong>Dolcetti Finiti!</strong>
-                  <span>Cestino vuoto, grazie a tutti</span>
-                </div>
-              </label>
-            </div>
-          </div>
-
-          <button type="submit" class="btn-submit">Salva Stato</button>
+          <p class="manage-sub">Da qui puoi togliere la tua casa dalla mappa quando non vuoi più partecipare.</p>
 
           <button type="button" id="btnDeleteHouse" class="btn-delete">
             🗑️ Rimuovi la casa dalla mappa
@@ -210,7 +179,7 @@
             <li><strong>Zero Dati Personali:</strong> Non vengono richiesti nomi reali, email o numeri di telefono.</li>
             <li><strong>Posizione Bambini 100% Privata:</strong> Il tasto <em>"Dove sono?"</em> funziona solo sullo schermo del tuo telefono. La posizione GPS dei bambini <strong>non viene mai inviata né salvata sul server</strong>.</li>
             <li><strong>Zero Traccianti o Cookie Terze Parti:</strong> Mappa e risorse sono ospitate localmente senza inviare indirizzi IP a Google o servizi pubblicitari.</li>
-            <li><strong>Cancellazione Automatica (Zero Manutenzione):</strong> Tutte le case vengono eliminate automaticamente dal sistema dopo la festa di Halloween (e ogni cittadino può rimuovere la propria in qualsiasi momento con un tocco).</li>
+            <li><strong>Cancellazione Automatica (Zero Manutenzione):</strong> Le case vengono eliminate automaticamente dal sistema circa due settimane dopo l'ultima modifica all'elenco (e ogni cittadino può rimuovere la propria in qualsiasi momento con un tocco).</li>
           </ul>
         </div>
 

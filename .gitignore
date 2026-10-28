@@ -1,8 +1,11 @@
 node_modules/
-tiles_cache/
+.wrangler/
+.dev.vars
+.env
+.DS_Store
+# File locali del vecchio server di prova: non vanno mai pubblicati
 halloween.db
 halloween.db-journal
 halloween.db-wal
 halloween.db-shm
-.env
-.DS_Store
+tiles_cache/
