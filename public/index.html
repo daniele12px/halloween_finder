@@ -61,11 +61,24 @@
 
     <!-- Unico pulsante sulla mappa: Trova la mia posizione -->
     <div class="map-controls">
-      <button id="btnLocateMe" class="btn-locate">
-        <span class="locate-icon">📍</span>
-        <span>Dove sono?</span>
-      </button>
-      <button id="btnMyHouse" class="btn-myhouse" type="button">🔑 La mia casa</button>
+      <button id="btnAddHouseBig" class="btn-cta" type="button">🎃 Aggiungi la tua casa</button>
+      <div class="map-controls-row">
+        <button id="btnLocateMe" class="btn-locate">
+          <span class="locate-icon">📍</span>
+          <span>Dove sono?</span>
+        </button>
+        <button id="btnMyHouse" class="btn-myhouse" type="button">🔑 La mia casa</button>
+      </div>
+    </div>
+
+    <!-- Benvenuto: compare solo la prima volta e non blocca la mappa -->
+    <div id="welcomeCard" class="welcome-card hidden" role="note">
+      <p>👋 <strong>Benvenuti!</strong> Tocca una zucca 🎃 per vedere dove fare dolcetto o scherzetto.</p>
+      <p>🏠 <strong>Hai una casa aperta ai bimbi?</strong> Aggiungila in 1 minuto, senza registrarti.</p>
+      <div class="welcome-actions">
+        <button type="button" id="btnWelcomeAdd" class="btn-welcome-add">🎃 Aggiungi la mia casa</button>
+        <button type="button" id="btnWelcomeClose" class="btn-welcome-close">Ho capito</button>
+      </div>
     </div>
 
     <!-- Banner tocca su mappa -->

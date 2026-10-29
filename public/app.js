@@ -97,7 +97,7 @@ function initMap() {
     preferCanvas: true
   }).setView([45.3188, 10.5828], 15);
 
-  L.control.zoom({ position: 'bottomright' }).addTo(AppState.map);
+  L.control.zoom({ position: 'topright' }).addTo(AppState.map);
 
   // Mappa OpenStreetMap servita dal nostro stesso sito: nessun IP dei visitatori arriva a terzi
   L.tileLayer('/tiles/{z}/{x}/{y}.png', {
@@ -266,6 +266,7 @@ function startPlacement(lat, lng, messageHtml) {
   AppState.placing = true;
   closeAllModals();
   setView('map');
+  document.querySelector('.map-wrapper').classList.add('is-placing');
 
   if (AppState.draftMarker) AppState.map.removeLayer(AppState.draftMarker);
   AppState.draftMarker = L.marker([lat, lng], {
@@ -280,6 +281,7 @@ function startPlacement(lat, lng, messageHtml) {
 
 function endPlacement() {
   AppState.placing = false;
+  document.querySelector('.map-wrapper').classList.remove('is-placing');
   if (AppState.draftMarker) {
     AppState.map.removeLayer(AppState.draftMarker);
     AppState.draftMarker = null;
@@ -692,6 +694,26 @@ function showHouseOnMap(id) {
   if (marker) setTimeout(() => marker.openPopup(), 400);
 }
 
+// Cartellino di benvenuto: solo alla prima visita, si chiude con un tocco
+function initWelcome() {
+  const card = document.getElementById('welcomeCard');
+  if (!card) return;
+  try {
+    if (localStorage.getItem('halloween_welcome_seen') === '1') return;
+  } catch (e) { /* senza memoria del browser compare ogni volta, nessun danno */ }
+
+  card.classList.remove('hidden');
+  const close = () => {
+    card.classList.add('hidden');
+    try { localStorage.setItem('halloween_welcome_seen', '1'); } catch (e) { /* ok */ }
+  };
+  document.getElementById('btnWelcomeClose').addEventListener('click', close);
+  document.getElementById('btnWelcomeAdd').addEventListener('click', () => {
+    close();
+    document.getElementById('btnOpenRegister').click();
+  });
+}
+
 function initApp() {
   const btnAdd = document.getElementById('btnOpenRegister');
   if (btnAdd) {
@@ -710,6 +732,9 @@ function initApp() {
       openModal('modalRegister');
     });
   }
+
+  const btnAddBig = document.getElementById('btnAddHouseBig');
+  if (btnAddBig) btnAddBig.addEventListener('click', () => document.getElementById('btnOpenRegister').click());
 
   const btnPrivacy = document.getElementById('btnOpenPrivacy');
   if (btnPrivacy) {
@@ -796,6 +821,8 @@ function initApp() {
   const token = urlParams.get('token');
   if (manageId && token) {
     openDirectManagement(manageId, token);
+  } else {
+    initWelcome();
   }
 }
 
