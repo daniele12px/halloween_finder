@@ -695,14 +695,9 @@ function showHouseOnMap(id) {
 }
 
 // Cartellino di benvenuto: solo alla prima visita, si chiude con un tocco
-function initWelcome() {
+function initWelcome(showNow) {
   const card = document.getElementById('welcomeCard');
   if (!card) return;
-  try {
-    if (localStorage.getItem('halloween_welcome_seen') === '1') return;
-  } catch (e) { /* senza memoria del browser compare ogni volta, nessun danno */ }
-
-  card.classList.remove('hidden');
   const close = () => {
     card.classList.add('hidden');
     try { localStorage.setItem('halloween_welcome_seen', '1'); } catch (e) { /* ok */ }
@@ -712,6 +707,18 @@ function initWelcome() {
     close();
     document.getElementById('btnOpenRegister').click();
   });
+  // Il pulsante "Aiuto" in alto riapre il cartellino quando si vuole
+  const help = document.getElementById('btnOpenHelp');
+  if (help) help.addEventListener('click', () => {
+    setView('map');
+    card.classList.remove('hidden');
+  });
+
+  if (!showNow) return;
+  try {
+    if (localStorage.getItem('halloween_welcome_seen') === '1') return;
+  } catch (e) { /* senza memoria del browser compare ogni volta, nessun danno */ }
+  card.classList.remove('hidden');
 }
 
 function initApp() {
@@ -837,8 +844,9 @@ function initApp() {
     openDirectManagement(manageId, token);
     // Il codice segreto è già salvato sul telefono: lo togliamo dalla barra degli indirizzi
     try { history.replaceState(null, '', window.location.pathname); } catch (e) { /* ok */ }
+    initWelcome(false);
   } else {
-    initWelcome();
+    initWelcome(true);
   }
 }
 

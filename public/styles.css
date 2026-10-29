@@ -1233,3 +1233,10 @@ html, body {
   .map-controls-row .btn-locate,
   .map-controls-row .btn-myhouse { padding: 9px 13px; font-size: 15px; }
 }
+
+/* Header stretto: Aiuto e Privacy devono stare sulla stessa riga del titolo */
+@media (max-width: 400px) {
+  .header-actions { gap: 6px; }
+  .btn-privacy-info { font-size: 13px; padding: 7px 9px; }
+  .brand-title { font-size: 16px; }
+}

@@ -1,5 +1,5 @@
 // Service Worker per PWA Halloween Guidizzolo
-const CACHE_NAME = 'halloween-guidizzolo-v10';
+const CACHE_NAME = 'halloween-guidizzolo-v11';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
