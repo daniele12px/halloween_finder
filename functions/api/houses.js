@@ -3,7 +3,10 @@
  *   GET  -> elenco pubblico delle case (senza il codice segreto del proprietario)
  *   POST -> registra una nuova casa
  */
-import { CENTER, MAX_RADIUS_KM, MAX_HOUSES, distanceKm, hasStore, readHouses, writeHouses, json } from "../_lib/store.js";
+import {
+  CENTER, MAX_RADIUS_KM, MAX_HOUSES, distanceKm, hasStore, readHouses, writeHouses, json,
+  newHouseCode, hashCode, publicHouse
+} from "../_lib/store.js";
 
 // Aiuto per trovare un punto di partenza quando chi registra scrive solo la via
 const STREETS = [
@@ -24,7 +27,8 @@ const STREETS = [
 
 export async function onRequestGet({ env }) {
   const houses = await readHouses(env);
-  const publicHouses = houses.map(({ editToken, tags, status, ...rest }) => rest);
+  // Le case nascoste dopo le segnalazioni non compaiono finché il moderatore non le riammette
+  const publicHouses = houses.filter((h) => !h.hidden).map(publicHouse);
   return json({ success: true, houses: publicHouses });
 }
 
@@ -77,6 +81,7 @@ export async function onRequestPost({ request, env }) {
 
   const id = crypto.randomUUID();
   const editToken = crypto.randomUUID().replace(/-/g, "");
+  const code = newHouseCode();
   const newHouse = {
     id,
     name,
@@ -85,11 +90,12 @@ export async function onRequestPost({ request, env }) {
     lng: Number(lng.toFixed(5)),
     notes,
     editToken,
+    codeHash: await hashCode(id, code),
     updated_at: Math.floor(Date.now() / 1000)
   };
 
   houses.unshift(newHouse);
   await writeHouses(env, houses);
 
-  return json({ success: true, id, address, lat: newHouse.lat, lng: newHouse.lng, editToken }, 201);
+  return json({ success: true, id, address, lat: newHouse.lat, lng: newHouse.lng, editToken, code }, 201);
 }

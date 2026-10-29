@@ -8,7 +8,10 @@ const AppState = {
   markersLayer: null,
   userMarker: null,
   houses: [],
-  pickingLocationOnMap: false,
+  placing: false,
+  draftMarker: null,
+  markerById: {},
+  view: 'map',
   ownedHouses: JSON.parse(localStorage.getItem('halloween_owned_houses') || '{}')
 };
 
@@ -16,6 +19,26 @@ function saveHouseOwnership(id, token) {
   if (!id || !token) return;
   AppState.ownedHouses[id] = token;
   localStorage.setItem('halloween_owned_houses', JSON.stringify(AppState.ownedHouses));
+}
+
+// Identificativo casuale del telefono: serve solo a contare una segnalazione per telefono
+function getDeviceId() {
+  try {
+    let id = localStorage.getItem('halloween_device_id');
+    if (!id) {
+      id = (window.crypto && window.crypto.randomUUID)
+        ? window.crypto.randomUUID()
+        : `${Date.now().toString(16)}${Math.random().toString(16).slice(2)}${Math.random().toString(16).slice(2)}`;
+      localStorage.setItem('halloween_device_id', id);
+    }
+    return id;
+  } catch (e) {
+    return '';
+  }
+}
+
+function formatCode(code) {
+  return code ? `${code.slice(0, 4)}-${code.slice(4)}` : '';
 }
 
 // Stradario locale client-side per trovare istantaneamente la via più vicina quando si tocca la mappa
@@ -87,8 +110,8 @@ function initMap() {
 
   // Click su mappa per scegliere posizione casa
   AppState.map.on('click', (e) => {
-    if (AppState.pickingLocationOnMap) {
-      handleLocationPicked(e.latlng.lat, e.latlng.lng);
+    if (AppState.placing && AppState.draftMarker) {
+      AppState.draftMarker.setLatLng(e.latlng);
     }
   });
 
@@ -129,6 +152,7 @@ function createHouseIcon(house) {
 function renderHouses() {
   if (!AppState.markersLayer) return;
   AppState.markersLayer.clearLayers();
+  AppState.markerById = {};
 
   AppState.houses.forEach(house => {
     const marker = L.marker([house.lat, house.lng], {
@@ -154,12 +178,19 @@ function renderHouses() {
         ${isOwner ? `<button class="btn-popup-manage" onclick="openManageHouse('${house.id}', '${escapeAttr(house.name)}', '${escapeAttr(house.address)}')">
           ⚙️ Gestisci la tua casa (Rimuovi)
         </button>` : ''}
+        <button class="btn-popup-report" onclick="openReportHouse('${house.id}', '${escapeAttr(house.name)}')">
+          🚩 Segnala un problema
+        </button>
       </div>
     `;
 
     marker.bindPopup(popupHtml);
     AppState.markersLayer.addLayer(marker);
+    AppState.markerById[house.id] = marker;
   });
+
+  updateCounter();
+  renderList();
 }
 
 async function loadHouses() {
@@ -228,55 +259,94 @@ function locateMe() {
 }
 
 // ==========================================================================
-// 4. Scelta Posizione su Mappa con Compilazione Automatica Indirizzo
+// 4. Posizione della casa: ricerca per indirizzo e conferma sulla mappa
 // ==========================================================================
 
-function startPickOnMap() {
-  AppState.pickingLocationOnMap = true;
+function startPlacement(lat, lng, messageHtml) {
+  AppState.placing = true;
   closeAllModals();
-  const banner = document.getElementById('pickLocationBanner');
-  if (banner) banner.classList.remove('hidden');
-  showToast('Tocca sulla mappa il punto esatto della tua casa!');
+  setView('map');
+
+  if (AppState.draftMarker) AppState.map.removeLayer(AppState.draftMarker);
+  AppState.draftMarker = L.marker([lat, lng], {
+    draggable: true,
+    icon: createHouseIcon()
+  }).addTo(AppState.map);
+  AppState.map.setView([lat, lng], 18);
+
+  document.getElementById('pickBannerText').innerHTML = messageHtml;
+  document.getElementById('pickLocationBanner').classList.remove('hidden');
 }
 
-function cancelPickOnMap() {
-  AppState.pickingLocationOnMap = false;
-  const banner = document.getElementById('pickLocationBanner');
-  if (banner) banner.classList.add('hidden');
+function endPlacement() {
+  AppState.placing = false;
+  if (AppState.draftMarker) {
+    AppState.map.removeLayer(AppState.draftMarker);
+    AppState.draftMarker = null;
+  }
+  document.getElementById('pickLocationBanner').classList.add('hidden');
+}
+
+function cancelPlacement() {
+  endPlacement();
   openModal('modalRegister');
 }
 
-async function handleLocationPicked(lat, lng) {
-  AppState.pickingLocationOnMap = false;
-  const banner = document.getElementById('pickLocationBanner');
-  if (banner) banner.classList.add('hidden');
+function confirmPlacement() {
+  if (!AppState.draftMarker) return;
+  const { lat, lng } = AppState.draftMarker.getLatLng();
+  endPlacement();
 
   document.getElementById('regLat').value = lat.toFixed(5);
   document.getElementById('regLng').value = lng.toFixed(5);
 
-  // Compila SUBITO il campo indirizzo con la via più vicina così non rimane mai vuoto!
+  // L'indirizzo scritto dall'utente (con il civico) resta quello mostrato a tutti
   const addressInput = document.getElementById('regAddress');
-  const fallbackStreet = findClosestStreetLocal(lat, lng);
-  addressInput.value = fallbackStreet;
+  if (!addressInput.value.trim()) addressInput.value = findClosestStreetLocal(lat, lng);
 
   const badge = document.getElementById('locationConfirmedBadge');
-  badge.textContent = `✓ Posizione impostata su mappa (${fallbackStreet})`;
+  badge.textContent = '✓ Posizione confermata sulla mappa!';
   badge.classList.remove('hidden');
 
   openModal('modalRegister');
-  showToast(`Posizione scelta: ${fallbackStreet} 📍`, 'success');
+  showToast('Posizione confermata 📍', 'success');
+}
 
-  // Affina il nome della via chiedendo al server (reverse geocoding)
+async function searchAddressOnMap() {
+  const address = document.getElementById('regAddress').value.trim();
+  if (address.length < 3) {
+    showToast('Scrivi prima la via e il numero civico', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('btnPickOnMap');
+  const label = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Cerco...';
+
   try {
-    const res = await fetch(`/api/reverse-geocode?lat=${lat}&lng=${lng}`);
+    const res = await fetch(`/api/geocode?q=${encodeURIComponent(address)}`);
     const data = await res.json();
-    if (data && data.address) {
-      addressInput.value = data.address;
-      badge.textContent = `✓ Posizione selezionata: ${data.address}`;
+    if (res.ok && data.found) {
+      startPlacement(
+        data.lat,
+        data.lng,
+        data.precision === 'house'
+          ? '📍 <strong>Controlla che il segnaposto sia sulla tua casa.</strong> Se serve, trascinalo o tocca la mappa.'
+          : '📍 Ho trovato la via ma non il numero: <strong>trascina il segnaposto sulla tua casa.</strong>'
+      );
+      return;
     }
   } catch (e) {
-    // Mantiene il valore già inserito dallo stradario locale
+    // Si passa alla scelta manuale qui sotto
+  } finally {
+    btn.disabled = false;
+    btn.textContent = label;
   }
+
+  showToast('Non trovo questo indirizzo: posiziona tu il segnaposto', 'error');
+  const c = AppState.map.getCenter();
+  startPlacement(c.lat, c.lng, '👉 <strong>Trascina il segnaposto sulla tua casa</strong> (o tocca la mappa), poi conferma.');
 }
 
 // ==========================================================================
@@ -285,6 +355,13 @@ async function handleLocationPicked(lat, lng) {
 
 async function handleRegisterSubmit(e) {
   e.preventDefault();
+
+  // Senza un punto confermato sulla mappa si parte dalla ricerca dell'indirizzo
+  if (isNaN(parseFloat(document.getElementById('regLat').value)) || isNaN(parseFloat(document.getElementById('regLng').value))) {
+    searchAddressOnMap();
+    return;
+  }
+
   const btn = document.getElementById('btnSubmitRegister');
   btn.disabled = true;
   btn.textContent = 'Salvataggio in corso...';
@@ -325,16 +402,19 @@ async function handleRegisterSubmit(e) {
     const linkInput = document.getElementById('directManageLink');
     if (linkInput) linkInput.value = manageUrl;
 
+    const codeBox = document.getElementById('houseCodeDisplay');
+    if (codeBox) codeBox.textContent = formatCode(data.code);
+
     const btnWhatsapp = document.getElementById('btnShareWhatsApp');
     if (btnWhatsapp) {
-      const whatsappText = `Ecco il link per gestire la nostra casa di Halloween (${name}): ${manageUrl}`;
+      const whatsappText = `Ecco il link per gestire la nostra casa di Halloween (${name}): ${manageUrl}\nCodice casa: ${formatCode(data.code)}`;
       btnWhatsapp.href = `https://api.whatsapp.com/send?text=${encodeURIComponent(whatsappText)}`;
     }
 
     const btnEmail = document.getElementById('btnSendEmail');
     if (btnEmail) {
       const emailSubject = `Halloween - Link gestione casa: ${name}`;
-      const emailBody = `Ecco il link personale per gestire la casa "${name}" (${address}):\n\n${manageUrl}`;
+      const emailBody = `Ecco il link personale per gestire la casa "${name}" (${address}):\n\n${manageUrl}\n\nCodice casa: ${formatCode(data.code)}`;
       btnEmail.href = `mailto:?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
     }
 
@@ -414,6 +494,94 @@ async function handleDeleteHouse() {
 }
 
 // ==========================================================================
+// 6b. "La mia casa" (con il codice) e segnalazioni
+// ==========================================================================
+
+async function handleClaimSubmit(e) {
+  e.preventDefault();
+  const input = document.getElementById('claimCode');
+  const errorBox = document.getElementById('claimError');
+  const btn = document.getElementById('btnClaim');
+  errorBox.classList.add('hidden');
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/claim', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: input.value })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      errorBox.textContent = data.error || 'Codice non valido.';
+      errorBox.classList.remove('hidden');
+      return;
+    }
+
+    // Da ora questo telefono riconosce la casa come sua
+    saveHouseOwnership(data.house.id, data.editToken);
+    input.value = '';
+    openManageHouse(data.house.id, data.house.name, data.house.address);
+    if (data.house.hidden) {
+      showToast('Questa casa è nascosta in attesa di controllo dopo alcune segnalazioni.', 'error');
+    }
+  } catch (err) {
+    errorBox.textContent = 'Errore di connessione. Riprova.';
+    errorBox.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+window.openReportHouse = function(id, name) {
+  document.getElementById('formReport').reset();
+  document.getElementById('reportHouseId').value = id;
+  document.getElementById('reportHouseName').textContent = name;
+  openModal('modalReport');
+};
+
+async function handleReportSubmit(e) {
+  e.preventDefault();
+  const id = document.getElementById('reportHouseId').value;
+  const checked = document.querySelector('input[name="reportReason"]:checked');
+  if (!checked) {
+    showToast('Scegli quale problema vuoi segnalare', 'error');
+    return;
+  }
+  const reporterId = getDeviceId();
+  if (!reporterId) {
+    showToast('Da questo browser non riesco a inviare la segnalazione', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('btnSendReport');
+  btn.disabled = true;
+  try {
+    const res = await fetch(`/api/houses/${encodeURIComponent(id)}/report`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        reason: checked.value,
+        note: document.getElementById('reportNote').value.trim(),
+        reporterId
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      showToast(data.error || 'Non sono riuscito a inviare la segnalazione.', 'error');
+      return;
+    }
+    closeAllModals();
+    showToast(data.already ? 'Avevamo già ricevuto la tua segnalazione. Grazie!' : 'Segnalazione inviata, grazie! 🙏', 'success');
+    await loadHouses();
+  } catch (err) {
+    showToast('Errore di connessione. Riprova.', 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ==========================================================================
 // 7. Utility Modali & Toast
 // ==========================================================================
 
@@ -457,6 +625,73 @@ function escapeAttr(str) {
 // 8. Setup & Avvio Immediato
 // ==========================================================================
 
+// ==========================================================================
+// 7b. Contatore, elenco delle case e cambio vista
+// ==========================================================================
+
+function updateCounter() {
+  const n = AppState.houses.length;
+  const number = document.getElementById('houseCounterNumber');
+  const label = document.getElementById('houseCounterLabel');
+  if (number) number.textContent = String(n);
+  if (label) label.textContent = n === 1 ? 'casa aperta ai bimbi' : 'case aperte ai bimbi';
+}
+
+function renderList() {
+  const container = document.getElementById('listItems');
+  if (!container) return;
+
+  const searchInput = document.getElementById('listSearch');
+  const q = (searchInput ? searchInput.value : '').trim().toLowerCase();
+
+  const items = AppState.houses
+    .filter(h => !q || `${h.name} ${h.address}`.toLowerCase().includes(q))
+    .sort((a, b) => String(a.address).localeCompare(String(b.address), 'it', { numeric: true }));
+
+  if (items.length === 0) {
+    container.innerHTML = `<p class="list-empty">${
+      AppState.houses.length
+        ? 'Nessuna casa corrisponde alla ricerca.'
+        : 'Ancora nessuna casa sulla mappa. Aggiungi la tua con il pulsante arancione! 🎃'
+    }</p>`;
+    return;
+  }
+
+  container.innerHTML = items.map(h => `
+    <article class="list-item">
+      <h3 class="list-item-title">🎃 ${escapeHtml(h.name)}</h3>
+      <p class="list-item-address">📍 ${escapeHtml(h.address)}</p>
+      ${h.notes ? `<p class="list-item-notes">💬 ${escapeHtml(h.notes)}</p>` : ''}
+      <div class="list-item-actions">
+        <button type="button" class="btn-list-map" data-house="${escapeAttr(h.id)}">🗺️ Vedi sulla mappa</button>
+        <a class="btn-list-nav" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(h.lat + ',' + h.lng)}&travelmode=walking">🚶 Portami qui</a>
+        <button type="button" class="btn-list-report" data-report="${escapeAttr(h.id)}">🚩 Segnala un problema</button>
+      </div>
+    </article>
+  `).join('');
+}
+
+function setView(name) {
+  AppState.view = name;
+  const wrapper = document.querySelector('.map-wrapper');
+  if (wrapper) wrapper.classList.toggle('is-list', name === 'list');
+  document.getElementById('listView').classList.toggle('hidden', name !== 'list');
+  document.getElementById('btnViewMap').classList.toggle('active', name === 'map');
+  document.getElementById('btnViewList').classList.toggle('active', name === 'list');
+  if (name === 'map' && AppState.map) {
+    setTimeout(() => AppState.map.invalidateSize(), 50);
+  }
+}
+
+function showHouseOnMap(id) {
+  setView('map');
+  const house = AppState.houses.find(h => h.id === id);
+  const marker = AppState.markerById[id];
+  if (!house || !AppState.map) return;
+  AppState.map.flyTo([house.lat, house.lng], 17);
+  if (marker) setTimeout(() => marker.openPopup(), 400);
+}
+
 function initApp() {
   const btnAdd = document.getElementById('btnOpenRegister');
   if (btnAdd) {
@@ -485,14 +720,56 @@ function initApp() {
   if (btnLocate) btnLocate.addEventListener('click', locateMe);
 
   const btnPick = document.getElementById('btnPickOnMap');
-  if (btnPick) btnPick.addEventListener('click', startPickOnMap);
+  if (btnPick) btnPick.addEventListener('click', searchAddressOnMap);
 
   const btnCancelPick = document.getElementById('btnCancelPick');
-  if (btnCancelPick) btnCancelPick.addEventListener('click', cancelPickOnMap);
+  if (btnCancelPick) btnCancelPick.addEventListener('click', cancelPlacement);
+
+  const btnConfirmPick = document.getElementById('btnConfirmPick');
+  if (btnConfirmPick) btnConfirmPick.addEventListener('click', confirmPlacement);
+
+  // Se cambia l'indirizzo scritto, il punto già confermato non vale più
+  const regAddress = document.getElementById('regAddress');
+  if (regAddress) {
+    regAddress.addEventListener('input', () => {
+      document.getElementById('regLat').value = '';
+      document.getElementById('regLng').value = '';
+      document.getElementById('locationConfirmedBadge').classList.add('hidden');
+    });
+  }
+
+  // Cambio vista Mappa / Elenco, ricerca e pulsanti dell'elenco
+  const btnViewMap = document.getElementById('btnViewMap');
+  if (btnViewMap) btnViewMap.addEventListener('click', () => setView('map'));
+  const btnViewList = document.getElementById('btnViewList');
+  if (btnViewList) btnViewList.addEventListener('click', () => setView('list'));
+  const listSearch = document.getElementById('listSearch');
+  if (listSearch) listSearch.addEventListener('input', renderList);
+  const listItems = document.getElementById('listItems');
+  if (listItems) {
+    listItems.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-house]');
+      if (btn) showHouseOnMap(btn.dataset.house);
+      const rep = e.target.closest('[data-report]');
+      if (rep) {
+        const house = AppState.houses.find(x => x.id === rep.dataset.report);
+        if (house) openReportHouse(house.id, house.name);
+      }
+    });
+  }
 
   const formReg = document.getElementById('formRegisterHouse');
   if (formReg) formReg.addEventListener('submit', handleRegisterSubmit);
 
+
+  const btnMyHouse = document.getElementById('btnMyHouse');
+  if (btnMyHouse) btnMyHouse.addEventListener('click', () => openModal('modalClaim'));
+  const btnMyHouseList = document.getElementById('btnMyHouseList');
+  if (btnMyHouseList) btnMyHouseList.addEventListener('click', () => openModal('modalClaim'));
+  const formClaim = document.getElementById('formClaim');
+  if (formClaim) formClaim.addEventListener('submit', handleClaimSubmit);
+  const formReport = document.getElementById('formReport');
+  if (formReport) formReport.addEventListener('submit', handleReportSubmit);
 
   const btnDelete = document.getElementById('btnDeleteHouse');
   if (btnDelete) btnDelete.addEventListener('click', handleDeleteHouse);

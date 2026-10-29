@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Moderatore · Halloween Guidizzolo</title>
+  <style>
+    :root { --bg:#0f0c1b; --card:#231c3d; --line:#3b3058; --orange:#ff7800; --text:#fff; --muted:#c4bfd6; --red:#e74c3c; --green:#2ecc71; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font:17px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .wrap { max-width: 760px; margin: 0 auto; padding: 20px 16px 60px; }
+    h1 { color: var(--orange); margin: 0 0 4px; }
+    h2 { margin: 28px 0 10px; font-size: 20px; }
+    .sub { color: var(--muted); margin: 0 0 18px; }
+    input[type=password] { width:100%; font:inherit; color:#fff; background:var(--card); border:2px solid var(--line); border-radius:12px; padding:12px 14px; }
+    button { font:inherit; font-weight:700; border-radius:12px; border:2px solid var(--orange); background:var(--orange); color:#fff; padding:10px 16px; cursor:pointer; }
+    button.ghost { background:transparent; color:#fff; border-color:var(--line); }
+    button.danger { background:rgba(231,76,60,.15); border-color:var(--red); color:#ff7675; }
+    button.ok { background:rgba(46,204,113,.15); border-color:var(--green); color:#6ee7a0; }
+    button:disabled { opacity:.5; cursor:default; }
+    .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .bar { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:6px; }
+    .error { color:#ff7675; font-weight:700; margin:10px 0 0; }
+    .card { background:var(--card); border:2px solid var(--line); border-radius:14px; padding:14px 16px; margin-bottom:12px; }
+    .card.flag { border-color: var(--red); }
+    .card h3 { margin:0 0 2px; font-size:19px; color:var(--orange); }
+    .meta { color:var(--muted); font-size:15px; margin:2px 0; }
+    .badge { display:inline-block; font-size:13px; font-weight:800; border-radius:999px; padding:3px 10px; margin-left:8px; vertical-align:middle; }
+    .badge.hidden-b { background:rgba(231,76,60,.2); color:#ff7675; }
+    .badge.count { background:rgba(255,120,0,.2); color:#ffb066; }
+    .reports { margin:10px 0 0; padding:10px 12px; background:rgba(0,0,0,.25); border-radius:10px; font-size:15px; }
+    .reports div { margin:3px 0; }
+    .actions { margin-top:12px; }
+    a { color:#ffb066; }
+    .empty { color:var(--muted); padding:8px 0; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <h1>🛡️ Moderatore</h1>
+    <p class="sub">Area riservata di Halloween Guidizzolo. Qui controlli le case segnalate dagli utenti.</p>
+
+    <section id="login">
+      <label for="key">Password del moderatore</label>
+      <p></p>
+      <input type="password" id="key" autocomplete="current-password">
+      <p class="row"><button id="enter" type="button">Entra</button></p>
+      <p id="loginError" class="error" hidden></p>
+    </section>
+
+    <section id="panel" hidden>
+      <div class="bar">
+        <strong id="summary"></strong>
+        <span class="row">
+          <button id="reload" class="ghost" type="button">Aggiorna</button>
+          <button id="logout" class="ghost" type="button">Esci</button>
+        </span>
+      </div>
+      <h2>Da controllare</h2>
+      <div id="review"></div>
+      <h2>Tutte le altre case</h2>
+      <div id="others"></div>
+    </section>
+  </main>
+
+  <script>
+    const REASONS = {
+      posizione: '📍 Posizione sbagliata',
+      non_esiste: '🚪 Qui non c\'è una casa che partecipa',
+      sicurezza: '⚠️ Posto non sicuro per i bambini',
+      altro: '💬 Altro'
+    };
+    const $ = (id) => document.getElementById(id);
+    let KEY = '';
+    try { KEY = sessionStorage.getItem('mod_key') || ''; } catch (e) {}
+
+    async function api(path, options = {}) {
+      const res = await fetch(path, {
+        ...options,
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + KEY }
+      });
+      let data = {};
+      try { data = await res.json(); } catch (e) {}
+      return { ok: res.ok, status: res.status, data };
+    }
+
+    function el(tag, props = {}, ...children) {
+      const node = document.createElement(tag);
+      Object.assign(node, props);
+      for (const c of children) node.append(c);
+      return node;
+    }
+
+    function formatDate(ts) {
+      return ts ? new Date(ts * 1000).toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' }) : '-';
+    }
+
+    async function act(id, action) {
+      if (action === 'delete' && !confirm('Eliminare definitivamente questa casa?')) return;
+      const r = await api('/api/admin/houses/' + encodeURIComponent(id), { method: 'POST', body: JSON.stringify({ action }) });
+      if (!r.ok) { alert(r.data.error || 'Operazione non riuscita.'); return; }
+      load();
+    }
+
+    function card(h) {
+      const reports = h.reports || [];
+      const c = el('div', { className: 'card' + (h.hidden || reports.length ? ' flag' : '') });
+      const title = el('h3', {}, h.name);
+      if (h.hidden) title.append(el('span', { className: 'badge hidden-b', textContent: 'NASCOSTA' }));
+      if (reports.length) title.append(el('span', { className: 'badge count', textContent: reports.length + ' segnalazioni' }));
+      c.append(title);
+      c.append(el('div', { className: 'meta', textContent: '📍 ' + h.address }));
+      if (h.notes) c.append(el('div', { className: 'meta', textContent: '💬 ' + h.notes }));
+      c.append(el('div', { className: 'meta', textContent: 'Ultima modifica: ' + formatDate(h.updated_at) }));
+
+      const osm = el('a', { href: 'https://www.openstreetmap.org/?mlat=' + h.lat + '&mlon=' + h.lng + '#map=19/' + h.lat + '/' + h.lng, target: '_blank', rel: 'noopener', textContent: 'Guarda il punto su OpenStreetMap' });
+      c.append(el('div', { className: 'meta' }, osm));
+
+      if (reports.length) {
+        const box = el('div', { className: 'reports' });
+        reports.forEach((r) => box.append(el('div', { textContent: (REASONS[r.reason] || r.reason) + (r.note ? ' — «' + r.note + '»' : '') + ' (' + formatDate(r.t) + ')' })));
+        c.append(box);
+      }
+
+      const actions = el('div', { className: 'actions row' });
+      if (h.hidden || reports.length) actions.append(el('button', { className: 'ok', type: 'button', textContent: '✓ Riammetti', onclick: () => act(h.id, 'restore') }));
+      if (!h.hidden) actions.append(el('button', { className: 'ghost', type: 'button', textContent: 'Nascondi', onclick: () => act(h.id, 'hide') }));
+      actions.append(el('button', { className: 'danger', type: 'button', textContent: '🗑️ Elimina', onclick: () => act(h.id, 'delete') }));
+      c.append(actions);
+      return c;
+    }
+
+    function fill(container, houses, emptyText) {
+      container.replaceChildren();
+      if (!houses.length) { container.append(el('div', { className: 'empty', textContent: emptyText })); return; }
+      houses.forEach((h) => container.append(card(h)));
+    }
+
+    async function load() {
+      const r = await api('/api/admin/houses');
+      if (!r.ok) {
+        $('panel').hidden = true; $('login').hidden = false;
+        $('loginError').textContent = r.data.error || 'Accesso non riuscito.';
+        $('loginError').hidden = false;
+        KEY = ''; try { sessionStorage.removeItem('mod_key'); } catch (e) {}
+        return;
+      }
+      try { sessionStorage.setItem('mod_key', KEY); } catch (e) {}
+      $('login').hidden = true; $('panel').hidden = false; $('loginError').hidden = true;
+      const houses = r.data.houses || [];
+      const review = houses.filter((h) => h.hidden || (h.reports && h.reports.length))
+        .sort((a, b) => (b.hidden ? 1 : 0) - (a.hidden ? 1 : 0) || (b.reports.length - a.reports.length));
+      const others = houses.filter((h) => !review.includes(h)).sort((a, b) => b.updated_at - a.updated_at);
+      $('summary').textContent = houses.length + ' case in totale, ' + review.length + ' da controllare';
+      fill($('review'), review, 'Nessuna casa da controllare. 🎃');
+      fill($('others'), others, 'Nessun\'altra casa.');
+    }
+
+    $('enter').addEventListener('click', () => { KEY = $('key').value; $('key').value = ''; load(); });
+    $('key').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('enter').click(); });
+    $('reload').addEventListener('click', load);
+    $('logout').addEventListener('click', () => {
+      KEY = ''; try { sessionStorage.removeItem('mod_key'); } catch (e) {}
+      $('panel').hidden = true; $('login').hidden = false;
+    });
+    if (KEY) load();
+  </script>
+</body>
+</html>
