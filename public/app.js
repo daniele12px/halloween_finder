@@ -175,10 +175,10 @@ function renderHouses() {
           🚶 Portami qui (Navigatore)
         </a>
 
-        ${isOwner ? `<button class="btn-popup-manage" onclick="openManageHouse('${house.id}', '${escapeAttr(house.name)}', '${escapeAttr(house.address)}')">
+        ${isOwner ? `<button type="button" class="btn-popup-manage" data-manage="${escapeAttr(house.id)}">
           ⚙️ Gestisci la tua casa (Rimuovi)
         </button>` : ''}
-        <button class="btn-popup-report" onclick="openReportHouse('${house.id}', '${escapeAttr(house.name)}')">
+        <button type="button" class="btn-popup-report" data-report="${escapeAttr(house.id)}">
           🚩 Segnala un problema
         </button>
       </div>
@@ -770,6 +770,20 @@ function initApp() {
   if (btnViewList) btnViewList.addEventListener('click', () => setView('list'));
   const listSearch = document.getElementById('listSearch');
   if (listSearch) listSearch.addEventListener('input', renderList);
+  // Pulsanti dentro i fumetti della mappa (niente onclick nell'HTML: più sicuro)
+  const mapEl = document.getElementById('map');
+  if (mapEl) {
+    mapEl.addEventListener('click', (e) => {
+      const man = e.target.closest('[data-manage]');
+      const rep = e.target.closest('[data-report]');
+      const id = man ? man.dataset.manage : rep ? rep.dataset.report : '';
+      const house = AppState.houses.find(x => x.id === id);
+      if (!house) return;
+      if (man) openManageHouse(house.id, house.name, house.address);
+      if (rep) openReportHouse(house.id, house.name);
+    });
+  }
+
   const listItems = document.getElementById('listItems');
   if (listItems) {
     listItems.addEventListener('click', (e) => {
@@ -821,6 +835,8 @@ function initApp() {
   const token = urlParams.get('token');
   if (manageId && token) {
     openDirectManagement(manageId, token);
+    // Il codice segreto è già salvato sul telefono: lo togliamo dalla barra degli indirizzi
+    try { history.replaceState(null, '', window.location.pathname); } catch (e) { /* ok */ }
   } else {
     initWelcome();
   }

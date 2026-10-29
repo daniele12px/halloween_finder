@@ -5,7 +5,7 @@
  * Non si salvano indirizzi IP: del telefono resta solo un'impronta legata alla singola casa.
  */
 import {
-  readHouses, writeHouses, sha256Hex, json,
+  readHouses, writeHouses, sha256Hex, json, networkFingerprint,
   REPORT_THRESHOLD, MAX_REPORTS_PER_HOUSE, REPORT_REASONS
 } from "../../../_lib/store.js";
 
@@ -30,12 +30,14 @@ export async function onRequestPost({ params, request, env }) {
 
   const reporter = await sha256Hex(`${house.id}:${reporterId}`);
   house.reports = Array.isArray(house.reports) ? house.reports : [];
-  if (house.reports.some((r) => r.h === reporter)) {
+  const net = await networkFingerprint(request, env, "segnalazione:" + house.id);
+  // Una segnalazione per telefono E per connessione: tre telefoni sulla stessa rete contano come una
+  if (house.reports.some((r) => r.h === reporter || (net && r.n === net))) {
     return json({ success: true, already: true });
   }
 
   if (house.reports.length < MAX_REPORTS_PER_HOUSE) {
-    house.reports.push({ h: reporter, reason, note, t: Math.floor(Date.now() / 1000) });
+    house.reports.push({ h: reporter, n: net, reason, note, t: Math.floor(Date.now() / 1000) });
   }
   if (house.reports.length >= REPORT_THRESHOLD && !house.hidden) {
     house.hidden = true;

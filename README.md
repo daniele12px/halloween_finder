@@ -10,7 +10,7 @@ Le famiglie che vogliono partecipare aggiungono la propria casa con un tocco, i 
 
 - **Niente account, niente password.** Chi aggiunge una casa sceglie un soprannome divertente (non serve il cognome) e scrive via e numero civico: il sito mostra il punto sulla mappa e chi registra lo controlla (e lo sposta, se serve) prima di confermare. Il telefono ricorda da solo che quella casa è sua e permette di rimuoverla con un tocco. Alla fine compare un **codice casa** di 8 caratteri da annotare: serve a ritrovare e rimuovere la casa da un altro telefono. Chi ha sbagliato qualcosa rimuove la casa e la aggiunge di nuovo.
 - **Mappa o elenco, con il conto delle case.** In alto un numero grande dice quante case sono aperte; con un tocco si passa dalla mappa all'elenco ordinato per via, con ricerca e navigatore.
-- **Privacy prima di tutto.** Non vengono chiesti nomi, email o numeri di telefono. La posizione dei bambini ("Dove sono?") resta sul telefono e non viene mai inviata o salvata. La mappa e la ricerca degli indirizzi passano dal sito stesso, quindi nessun indirizzo IP arriva a servizi pubblicitari.
+- **Privacy prima di tutto.** Non vengono chiesti account, email o numeri di telefono (nome della casa, indirizzo e note sono invece pubblici). La posizione dei bambini ("Dove sono?") resta sul telefono e non viene mai inviata o salvata. La mappa e la ricerca degli indirizzi passano dal sito stesso, quindi nessun indirizzo IP arriva a servizi pubblicitari.
 - **Segnalazioni per la sicurezza dei bambini.** Chiunque può segnalare in modo anonimo una casa (posizione sbagliata, casa che non partecipa, posto non sicuro). Dopo 3 segnalazioni da telefoni diversi la casa viene **nascosta** dalla mappa in attesa di un controllo. Il moderatore le vede in una pagina riservata (`/moderatore.html`, protetta da password) e decide se riammettere o eliminare la casa.
 - **Si pulisce da solo.** L'elenco delle case viene cancellato automaticamente circa due settimane dopo l'ultima modifica, e ognuno può togliere la propria casa quando vuole.
 - **Gratis.** Gira sul piano gratuito di Cloudflare, di solito più che sufficiente per un comune.
@@ -108,7 +108,7 @@ Senza `ADMIN_KEY` (almeno 12 caratteri) la pagina del moderatore resta bloccata 
 - Non c'è un limite di tentativi sul codice casa né sulla password del moderatore: il codice ha circa 850 miliardi di combinazioni e la password dev'essere lunga, ma per un uso diverso da una festa di paese conviene aggiungere un limite di richieste in Cloudflare.
 
 - L'intero elenco è in un'unica chiave KV: se due persone registrano una casa nello stesso istante, una delle due può andare persa e dovrà riprovare. Va bene per un comune o per un evento di una sera, non per carichi grandi.
-- Non c'è un limite di richieste per utente; c'è solo un tetto massimo di 500 case e un raggio massimo dal centro del comune.
+- Contro gli abusi c'è un tetto di 500 case, un raggio massimo dal centro, al massimo 10 case per connessione internet e una sola segnalazione per casa da ogni connessione. Dell'indirizzo IP si conserva solo un'impronta cifrata con `ADMIN_KEY`, non l'indirizzo. Chi cambia rete di continuo può comunque aggirare questi limiti: per questo esiste il moderatore.
 - Cancellare "dopo due settimane" significa 14 giorni dopo l'ultima modifica all'elenco (è la scadenza della chiave KV).
 
 ## Crediti e licenza

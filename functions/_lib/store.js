@@ -10,6 +10,7 @@ export const MAX_RADIUS_KM = 8;   // oltre questo raggio dal centro non si regis
 export const MAX_HOUSES = 500;    // limite di sicurezza contro gli abusi
 export const REPORT_THRESHOLD = 3; // segnalazioni da telefoni diversi dopo cui la casa viene nascosta
 export const MAX_REPORTS_PER_HOUSE = 50;
+export const MAX_HOUSES_PER_NETWORK = 10; // case registrabili dalla stessa connessione internet
 export const REPORT_REASONS = ["posizione", "non_esiste", "sicurezza", "altro"];
 
 const KEY = "houses_list";
@@ -84,13 +85,13 @@ export function hashCode(houseId, code) {
 // ---------------------------------------------------------------------------
 
 export function publicHouse(house) {
-  const { editToken, codeHash, reports, hidden, hiddenAt, restoredAt, tags, status, ...rest } = house;
+  const { editToken, codeHash, reports, hidden, hiddenAt, restoredAt, tags, status, net, ...rest } = house;
   return rest;
 }
 
 export function adminHouse(house) {
-  const { editToken, codeHash, reports, ...rest } = house;
-  return { ...rest, reports: (Array.isArray(reports) ? reports : []).map(({ h, ...r }) => r) };
+  const { editToken, codeHash, reports, net, ...rest } = house;
+  return { ...rest, reports: (Array.isArray(reports) ? reports : []).map(({ h, n, ...r }) => r) };
 }
 
 // ---------------------------------------------------------------------------
@@ -113,4 +114,17 @@ export async function adminGate(request, env) {
     return json({ error: "Password non corretta." }, 401);
   }
   return null;
+}
+
+// ---------------------------------------------------------------------------
+// Impronta della connessione: serve solo a impedire che una sola persona registri decine di case
+// finte o nasconda le case altrui con segnalazioni ripetute. L'indirizzo IP NON viene salvato:
+// si conserva un'impronta cifrata con il segreto ADMIN_KEY, diversa per ogni uso e non reversibile.
+// ---------------------------------------------------------------------------
+
+export async function networkFingerprint(request, env, scope) {
+  const ip = request.headers.get("CF-Connecting-IP") || "";
+  if (!ip) return "";
+  const secret = env && env.ADMIN_KEY ? String(env.ADMIN_KEY) : "halloween-finder";
+  return (await sha256Hex(`${secret}:${scope}:${ip}`)).slice(0, 32);
 }

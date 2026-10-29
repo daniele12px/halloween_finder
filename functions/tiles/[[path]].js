@@ -44,7 +44,9 @@ export async function onRequestGet(context) {
   }
 
   const cache = caches.default;
-  const cached = await cache.match(request);
+  // Chiave fissa: aggiungere "?qualcosa" all'indirizzo non deve scavalcare la cache
+  const cacheKey = new Request(`https://tiles.cache/${z}/${x}/${y}.png`);
+  const cached = await cache.match(cacheKey);
   if (cached) return cached;
 
   const upstream = await fetch(`https://tile.openstreetmap.org/${z}/${x}/${y}.png`, {
@@ -58,6 +60,6 @@ export async function onRequestGet(context) {
     status: 200,
     headers: { "Content-Type": "image/png", "Cache-Control": "public, max-age=604800" }
   });
-  context.waitUntil(cache.put(request, response.clone()));
+  context.waitUntil(cache.put(cacheKey, response.clone()));
   return response;
 }

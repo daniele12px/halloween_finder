@@ -5,7 +5,7 @@
  */
 import {
   CENTER, MAX_RADIUS_KM, MAX_HOUSES, distanceKm, hasStore, readHouses, writeHouses, json,
-  newHouseCode, hashCode, publicHouse
+  newHouseCode, hashCode, publicHouse, networkFingerprint, MAX_HOUSES_PER_NETWORK
 } from "../_lib/store.js";
 
 // Aiuto per trovare un punto di partenza quando chi registra scrive solo la via
@@ -79,6 +79,11 @@ export async function onRequestPost({ request, env }) {
     return json({ error: "Limite di case raggiunto." }, 429);
   }
 
+  const net = await networkFingerprint(request, env, "registrazione");
+  if (net && houses.filter((h) => h.net === net).length >= MAX_HOUSES_PER_NETWORK) {
+    return json({ error: "Da questa connessione sono già state aggiunte molte case. Se è un errore, riprova più tardi da un'altra rete." }, 429);
+  }
+
   const id = crypto.randomUUID();
   const editToken = crypto.randomUUID().replace(/-/g, "");
   const code = newHouseCode();
@@ -91,6 +96,7 @@ export async function onRequestPost({ request, env }) {
     notes,
     editToken,
     codeHash: await hashCode(id, code),
+    net,
     updated_at: Math.floor(Date.now() / 1000)
   };
 
