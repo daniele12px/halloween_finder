@@ -1,5 +1,5 @@
 // Service Worker per PWA Halloween Guidizzolo
-const CACHE_NAME = 'halloween-guidizzolo-v8';
+const CACHE_NAME = 'halloween-guidizzolo-v9';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -27,7 +27,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Network-first per le API, Cache-first per asset statici
+// Network-first per API e file dell'app; la cache serve solo offline
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
@@ -43,18 +43,15 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Risorse statiche
+  // Risorse statiche: prima la rete (cosi' gli aggiornamenti arrivano subito), cache solo se offline
+  if (event.request.method !== 'GET') return;
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      return cachedResponse || fetch(event.request).then((networkResponse) => {
-        return caches.open(CACHE_NAME).then((cache) => {
-          // Memorizza in cache solo risorse valide
-          if (event.request.method === 'GET' && networkResponse.status === 200) {
-            cache.put(event.request, networkResponse.clone());
-          }
-          return networkResponse;
-        });
-      });
-    })
+    fetch(event.request).then((networkResponse) => {
+      if (networkResponse.status === 200) {
+        const copy = networkResponse.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+      }
+      return networkResponse;
+    }).catch(() => caches.match(event.request))
   );
 });
