@@ -1173,8 +1173,9 @@ html, body {
 }
 
 /* Durante la scelta del punto sulla mappa i pulsanti in basso non servono */
-.map-wrapper.is-placing .map-controls {
-  display: none;
+.map-wrapper.is-placing .map-controls,
+.map-wrapper.is-placing .welcome-card {
+  display: none !important;
 }
 
 .welcome-card {

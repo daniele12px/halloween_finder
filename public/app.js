@@ -725,6 +725,12 @@ function initApp() {
   const btnAdd = document.getElementById('btnOpenRegister');
   if (btnAdd) {
     btnAdd.addEventListener('click', () => {
+      // Chi inizia ad aggiungere la casa ha capito: il cartellino non deve coprire la mappa
+      const welcome = document.getElementById('welcomeCard');
+      if (welcome && !welcome.classList.contains('hidden')) {
+        welcome.classList.add('hidden');
+        try { localStorage.setItem('halloween_welcome_seen', '1'); } catch (e) { /* ok */ }
+      }
       document.getElementById('formRegisterHouse').classList.remove('hidden');
       document.getElementById('registerSuccessView').classList.add('hidden');
       document.getElementById('formRegisterHouse').reset();
